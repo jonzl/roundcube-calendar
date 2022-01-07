@@ -37,10 +37,10 @@
 	],
 	"require": {
 		"php": ">=7.1.0",
-		"roundcube/plugin-installer": "~0.3.0",
-		"kolab/libcalendaring": "3.5.6",
-		"kolab/libkolab": "3.5.6",
-		"sabre/dav": "3.0.9"
+		"roundcube/plugin-installer": "*",
+		"kolab/libcalendaring": "*",
+		"kolab/libkolab": "*",
+		"sabre/dav": "*"
 	},
 	"extra": {
 		"roundcube": {

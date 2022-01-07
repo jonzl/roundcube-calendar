@@ -21,18 +21,17 @@
  |                                                                         |
  +-------------------------------------------------------------------------+
  | Author: Lazlo Westerhof <hello@lazlo.me>                                |
- |         Thomas Bruederli <bruederli@kolabsys.com>     				           |
- |		     Gene Hawkins <texxasrulez@yahoo.com>							               |
- |		     David Beijinho <davidbeijinhi@gmail.com>				                 |
+ |         Thomas Bruederli <bruederli@kolabsys.com>     				   |  
+ |		   Gene Hawkins <texxasrulez@yahoo.com>							   |
  +-------------------------------------------------------------------------+
 */
 
-// backend type (database, kolab caldav)
-$config['calendar_driver'] = "database";
+// backend type ("database", "caldav", "ical", "ldap")
+$config['calendar_driver'] = "caldav";
 $config['calendar_driver_default'] = "caldav";
 
 // default calendar view (agendaDay, agendaWeek, month)
-$config['calendar_default_view'] = "agendaWeek";
+$config['calendar_default_view'] = "month";
 
 //Default Sync time value in seconds, 600sec=10minutes
 $config['calendar_sync_period'] = "600";
@@ -72,22 +71,22 @@ $config['calendar_date_format_sets'] = array(
 // $config['calendar_date_agenda'] = 'ddd MM-dd';
 
 // timeslots per hour (1, 2, 3, 4, 6)
-$config['calendar_timeslots'] = 2;
+$config['calendar_timeslots'] = 4;
 
 // show this number of days in agenda view
 $config['calendar_agenda_range'] = 60;
 
 // first day of the week (0-6)
-$config['calendar_first_day'] = 1;
+$config['calendar_first_day'] = 0;
 
 // first hour of the calendar (0-23)
 $config['calendar_first_hour'] = 6;
 
 // working hours begin
-$config['calendar_work_start'] = 6;
+$config['calendar_work_start'] = 8;
 
 // working hours end
-$config['calendar_work_end'] = 18;
+$config['calendar_work_end'] = 17;
 
 // show line at current time of the day
 $config['calendar_time_indicator'] = true;
@@ -112,20 +111,20 @@ $config['calendar_default_alarm_offset'] = '-15M';
 // 1: according to category color
 // 2: calendar for outer, category for inner color
 // 3: category for outer, calendar for inner color
-$config['calendar_event_coloring'] = 0;
+$config['calendar_event_coloring'] = 2;
 
 // event categories
 $config['calendar_categories'] = array(
-  'Personal' => 'c0c0c0',
-      'Work' => 'ff0000',
-    'Family' => '00ff00',
-   'Holiday' => 'ff6600',
- 'Birthdays' => '7a4053',
-   'Friends' => '2e004f',
+  'Birthdays' => '7a4053',
+     'Family' => '191970',
+    'Friends' => '2e004f',
+   'Holidays' => '9e9e00',
+   'Personal' => '005c5c',
+       'Work' => '224c69',
 );
 
 // enable users to invite/edit attendees for shared events organized by others
-$config['calendar_allow_invite_shared'] = false;
+$config['calendar_allow_invite_shared'] = true;
 
 // allow users to accecpt iTip invitations who are no explicitly listed as attendee.
 // this can be the case if invitations are sent to mailing lists or alias email addresses.

@@ -321,4 +321,6 @@ $labels['arialabelresourcesearchform'] = 'Resources search form';
 $labels['arialabelresourceselection'] = 'Available resources';
 $labels['arialabeleventform'] = 'Event editing form';
 
+$labels['caldav_url'] = 'CalDAV URL';
+$labels['auth'] = 'Authentication';
 ?>

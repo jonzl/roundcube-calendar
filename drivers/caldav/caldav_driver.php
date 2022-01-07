@@ -20,6 +20,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 require_once (dirname(__FILE__).'/caldav_sync.php');
+require_once (dirname(__FILE__).'/../../lib/encryption.php');
+require_once (dirname(__FILE__).'/../../lib/oauth_client.php');
 class caldav_driver extends calendar_driver
 {
     const DB_DATE_FORMAT = 'Y-m-d H:i:s';
@@ -115,6 +117,7 @@ class caldav_driver extends calendar_driver
                 $arr['editable'] = true;
                 $arr['deletable'] = true;
                 $arr['caldav_pass'] = $this->_decrypt_pass($arr['caldav_pass']);
+                $arr['caldav_oauth_provider'] = html::quote($arr['caldav_oauth_provider']);
                 $this->calendars[$arr['calendar_id']] = $arr;
                 $calendar_ids[] = $this->rc->db->quote($arr['calendar_id']);
                 // Init sync client
@@ -198,6 +201,7 @@ class caldav_driver extends calendar_driver
      *             caldav_tag: CalDAV calendar ctag
      *            caldav_user: CalDAV authentication user
      *            caldav_pass: CalDAV authentication password
+     * caldav_oauth_provider: Unique config ID for OAuth2 provider, see config.inc.php
      *
      * @return mixed ID of the calendar on success, False on error
      */
@@ -213,8 +217,8 @@ class caldav_driver extends calendar_driver
 		
         $result = $this->rc->db->query(
             "INSERT INTO " . $this->db_calendars . "
-       (user_id, name, color, showalarms, caldav_url, caldav_tag, caldav_user, caldav_pass)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+       (user_id, name, color, showalarms, caldav_url, caldav_tag, caldav_user, caldav_pass, caldav_oauth_provider)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             $this->rc->user->ID,
             $prop['name'],
             strval($prop['color']),
@@ -223,6 +227,7 @@ class caldav_driver extends calendar_driver
             isset($prop["caldav_tag"]) && $prop["caldav_tag"] ? $prop["caldav_tag"] : null,
             isset($prop["caldav_user"]) && $prop["caldav_user"] ? $prop["caldav_user"] : null,
             isset($prop["caldav_pass"]) && $prop["caldav_pass"] ? $this->_encrypt_pass($prop["caldav_pass"]) : null,
+            isset($prop["caldav_oauth_provider"]) && $prop["caldav_oauth_provider"] ? $prop["caldav_oauth_provider"] : null
         );
         if ($result)
             return $this->rc->db->insert_id($this->db_calendars);
@@ -236,7 +241,7 @@ class caldav_driver extends calendar_driver
     public function edit_calendar($cal)
     {
         $query = $this->rc->db->query("UPDATE " . $this->db_calendars . "
-            SET   name=?, color=?, showalarms=?, caldav_url=?, caldav_tag=?, caldav_user=?
+            SET   name=?, color=?, showalarms=?, caldav_url=?, caldav_tag=?, caldav_user=?, caldav_oauth_provider=?
             WHERE calendar_id=?
             AND   user_id=?",
             $cal['name'],
@@ -245,6 +250,7 @@ class caldav_driver extends calendar_driver
             $cal['caldav_url'],
             isset($cal["caldav_tag"]) && $cal["caldav_tag"] ? $cal["caldav_tag"] : null,
             isset($cal["caldav_user"]) && $cal["caldav_user"] ? $cal["caldav_user"] : null,
+            isset($cal["caldav_oauth_provider"]) && $cal["caldav_oauth_provider"] ? $cal["caldav_oauth_provider"] : null,
             $cal['id'],
             $this->rc->user->ID
         );
@@ -530,7 +536,7 @@ class caldav_driver extends calendar_driver
                         ) {
                             $recurrence_id_format = libcalendaring::recurrence_id_format($event);
                             foreach ($exceptions as $exception) {
-                                $recurrence_id = rcube_utils::anytodatetime($exception['_instance'], $old['start']->getTimezone($tz));
+                                $recurrence_id = rcube_utils::anytodatetime($exception['_instance'], $old['start']->getTimezone());
                                 if (is_a($recurrence_id, 'DateTime')) {
                                     $recurrence_id->add($date_shift);
                                     $exception['_instance'] = $recurrence_id->format($recurrence_id_format);
@@ -1192,7 +1198,7 @@ class caldav_driver extends calendar_driver
         if (strlen($event['instance'])) {
             $event['_instance'] = $event['instance'];
             if (empty($event['recurrence_id'])) {
-                $event['recurrence_date'] = rcube_utils::anytodatetime($event['_instance'], $event['start']->getTimezone($tz));
+                $event['recurrence_date'] = rcube_utils::anytodatetime($event['_instance'], $event['start']->getTimezone());
             }
         }
         if ($event['_attachments'] > 0) {
@@ -1497,6 +1503,8 @@ class caldav_driver extends calendar_driver
         // Make sure we have current attributes
         $calendar = $this->calendars[$calendar["id"]];
         $form = array();
+        $hidden_fields[] = array("name" => "caldav_oauth_provider",
+            "value" => ""); // Don't send plain text oauth2 token to GUI
         // General tab
         $form['props'] = array(
             'name' => $this->rc->gettext('properties'),
@@ -1549,7 +1557,43 @@ class caldav_driver extends calendar_driver
             "value" => $input_caldav_pass->show(null), // Don't send plain text password to GUI
             "id" => "caldav_pass",
         );
+        $form['auth']['fieldsets']['caldav_auth_digest'] = array(
+            'name' => $this->cal->gettext('caldav_auth_digest'),
+            'content' => array(
+                'caldav_user' => $formfields["caldav_user"],
+                'caldav_pass' => $formfields["caldav_pass"]
+            )
+        );
+        $oauth2_buttons = array();
+        if(isset($calendar["caldav_oauth_provider"]) && ($provider = oauth_client::get_provider($calendar["caldav_oauth_provider"]) !== false)){
+            array_push($oauth2_buttons, new html_inputfield(array(
+                "type" => "button",
+                "class" => "button",
+                "onclick" => "", // TODO: Do s.th.
+                "value" => $this->cal->gettext("logout_from").$provider["name"]
+            )));
+        } else {
+            foreach ( oauth_client::get_providers() as $id => $provider ) {
+                $login = new html_inputfield( array(
+                    "type"    => "button",
+                    "class"   => "button " . $id,
+                    "onclick" => "", // TODO: Do s.th.
+                    "value"   => $this->cal->gettext( "login_with" ) . $provider["name"]
+                ) );
+                array_push( $oauth2_buttons, $login->show() );
+            }
+        }
+        $form['auth']['fieldsets']['caldav_auth_oauth'] = array(
+            'name' => $this->cal->gettext('caldav_auth_oauth'),
+            'content' => implode( "", $oauth2_buttons)
+        );
         $this->form_html = '';
+        if (is_array($hidden_fields)) {
+            foreach ($hidden_fields as $field) {
+                $hiddenfield = new html_hiddenfield($field);
+                $this->form_html .= $hiddenfield->show() . "\r\n";
+            }
+        }
         // Create form output
         foreach ($form as $tab) {
             if (!empty($tab['fieldsets']) && is_array($tab['fieldsets'])) {
@@ -1723,6 +1767,7 @@ class caldav_driver extends calendar_driver
         $current_user_principal = array('{DAV:}current-user-principal');
         $calendar_home_set = array('{urn:ietf:params:xml:ns:caldav}calendar-home-set');
         $cal_attribs = array('{DAV:}resourcetype', '{DAV:}displayname', '{http://apple.com/ns/ical/}calendar-color');
+        $oauth_client = (isset($props["caldav_oauth_provider"]) && $props["caldav_oauth_provider"]) ? new oauth_client($this->rc, $props["caldav_oauth_provider"]) : null;
         if (!class_exists('caldav_client')) {
         	require_once ($this->cal->home.'/lib/caldav_client.php');
         }

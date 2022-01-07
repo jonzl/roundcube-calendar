@@ -6,6 +6,39 @@
  * @licence GNU AGPL
  */
 
+CREATE TABLE IF NOT EXISTS `calendar_oauth_states` (
+  `provider` varchar(255) NOT NULL,
+  `client_config_id` varchar(255) NOT NULL,
+  `user_id` varchar(255) NOT NULL,
+  `scope` varchar(255) NOT NULL,
+  `issue_time` INTEGER NOT NULL,
+  `state` varchar(255) NOT NULL,
+  UNIQUE (`provider`(50), `client_config_id`(50), `user_id`(50), `scope`(50)),
+  PRIMARY KEY (`state`)
+) /*!40000 ENGINE=INNODB */ /*!40101 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */;
+
+CREATE TABLE IF NOT EXISTS `calendar_oauth_access_tokens` (
+  `provider` varchar(255) NOT NULL,
+  `client_config_id` varchar(255) NOT NULL,
+  `user_id` varchar(255) NOT NULL,
+  `scope` varchar(255) NOT NULL,
+  `issue_time` INTEGER NOT NULL,
+  `access_token` varchar(255) NOT NULL,
+  `token_type` varchar(255) NOT NULL,
+  `expires_in` INTEGER DEFAULT NULL,
+  UNIQUE (`provider`(50), `client_config_id`(50), `user_id`(50), `scope`(50))
+) /*!40000 ENGINE=INNODB */ /*!40101 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */;
+
+CREATE TABLE IF NOT EXISTS `calendar_oauth_refresh_tokens` (
+  `provider` varchar(255) NOT NULL,
+  `client_config_id` varchar(255) NOT NULL,
+  `user_id` varchar(255) NOT NULL,
+  `scope` varchar(255) NOT NULL,
+  `issue_time` INTEGER NOT NULL,
+  `refresh_token` varchar(255) DEFAULT NULL,
+  UNIQUE (`provider`(50), `client_config_id`(50), `user_id`(50), `scope`(50))
+) /*!40000 ENGINE=INNODB */ /*!40101 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */;
+
 CREATE TABLE IF NOT EXISTS `caldav_calendars` (
   `calendar_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` int(10) UNSIGNED NOT NULL DEFAULT '0',
@@ -16,6 +49,7 @@ CREATE TABLE IF NOT EXISTS `caldav_calendars` (
   `caldav_tag` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'COLLATE',
   `caldav_user` varchar(1000) DEFAULT NULL,
   `caldav_pass` varchar(1000) DEFAULT NULL,
+  `caldav_oauth_provider` varbinary(200) DEFAULT NULL,
   `readonly` int NOT NULL DEFAULT '0',
   `caldav_last_change` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 

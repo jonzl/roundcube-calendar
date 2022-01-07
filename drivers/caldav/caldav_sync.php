@@ -43,6 +43,7 @@ class caldav_sync
      *            caldav_url: Caldav calendar URL.
      *           caldav_user: Caldav http basic auth user.
      *           caldav_pass: Password für caldav user.
+     * caldav_oauth_provider: ID for optional OAuth2 provider
      *            caldav_tag: Caldav ctag for calendar.
      */
     public function __construct($cal)
@@ -54,8 +55,10 @@ class caldav_sync
         // CalDAV client auth
         $username = isset($cal["caldav_user"]) ? $cal["caldav_user"] : null;
         $pass = isset($cal["caldav_pass"]) ? $cal["caldav_pass"] : null;
-      
-        $this->caldav = new caldav_client($this->url, $username, $pass);
+        $oauth_client = isset($cal["caldav_oauth_provider"]) && $cal["caldav_oauth_provider"] ?
+            new oauth_client(rcmail::get_instance(), $cal["caldav_oauth_provider"]) : null;
+        
+        $this->caldav = new caldav_client($this->url, $username, $pass, $oauth_client);
     }
 
     /**

@@ -15,6 +15,39 @@ PRAGMA auto_vacuum = NONE;
 PRAGMA secure_delete = OFF;
 BEGIN TRANSACTION;
 
+CREATE TABLE `calendar_oauth_states` (
+`provider` TEXT NOT NULL,
+`client_config_id` TEXT NOT NULL,
+`user_id` TEXT NOT NULL,
+`scope` TEXT NOT NULL,
+`issue_time` INTEGER NOT NULL,
+`state` TEXT NOT NULL,
+UNIQUE (`provider`(50), `client_config_id`(50), `user_id`(50), `scope`(50)),
+PRIMARY KEY (`state`)
+);
+
+CREATE TABLE `calendar_oauth_access_tokens` (
+`provider` TEXT NOT NULL,
+`client_config_id` TEXT NOT NULL,
+`user_id` TEXT NOT NULL,
+`scope` TEXT NOT NULL,
+`issue_time` INTEGER NOT NULL,
+`access_token` TEXT NOT NULL,
+`token_type` TEXT NOT NULL,
+`expires_in` INTEGER DEFAULT NULL,
+UNIQUE (`provider`(50), `client_config_id`(50), `user_id`(50), `scope`(50))
+);
+
+CREATE TABLE `calendar_oauth_refresh_tokens` (
+`provider` TEXT NOT NULL,
+`client_config_id` TEXT NOT NULL,
+`user_id` TEXT NOT NULL,
+`scope` TEXT NOT NULL,
+`issue_time` INTEGER NOT NULL,
+`refresh_token` TEXT DEFAULT NULL,
+UNIQUE (`provider`(50), `client_config_id`(50), `user_id`(50), `scope`(50))
+);
+
 CREATE TABLE `caldav_calendars` (
 `calendar_id` INTEGER  NOT NULL ,
 `user_id` INTEGER  NOT NULL DEFAULT '0',
@@ -25,6 +58,7 @@ CREATE TABLE `caldav_calendars` (
 `caldav_tag` TEXT   NULL DEFAULT 'COLLATE',
 `caldav_user` TEXT DEFAULT NULL,
 `caldav_pass` TEXT DEFAULT NULL,
+`caldav_oauth_provider` varbinary(200) DEFAULT NULL,
 `readonly` int NOT NULL DEFAULT '0',
 `caldav_last_change` timestamp NOT NULL ,
 PRIMARY KEY(`calendar_id`),
